@@ -1,0 +1,21 @@
+class AuctionItem
+  include DataMapper::Resource
+
+  # property <name>, <type>
+  property :id, Serial
+  property :remote_key, Integer
+  property :name, String
+  property :current_bid_price, Float
+  property :buy_it_now_price, Float
+  property :shipping_cost, Float
+  property :end_time, DateTime
+  property :bids, Integer
+  property :quantity, Integer
+  property :location, String
+  property :items_included, String
+  property :items_missing, String
+  property :condition, String
+
+  belongs_to :category
+
+end
