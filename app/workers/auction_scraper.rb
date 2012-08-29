@@ -40,16 +40,24 @@ class AuctionScraper
 
   def get_auction(auction_id)
     auction = AuctionItem.first_or_new(:remote_key => auction_id)
-    page = session.get("http://bestbuy.dtdeals.com/auction/index.cfm?P=5&I=#{auction_id}")
+    auction_url = "http://bestbuy.dtdeals.com/auction/index.cfm?P=5&I=#{auction_id}"
+    logger.debug auction_url
+    page = session.get(auction_url)
 
     category_list = page.search("div#breadCrumbs a").map(&:text)
-    auction.category = find_category(category_list)
+    if category_list.length > 0
+      auction.category = find_category(category_list)
+    end
 
+    name_element = page.at("div.ItemTitle")
+    # sometimes an auction gets deleted or something
+    unless name_element.present?
+      logger.warn "Couldn't load auction #{auction_url}"
+      return nil
+    end
     auction.attributes = {
-      :name => page.at("div.ItemTitle").children[2].text.strip,
+      :name => name_element.children[2].text.strip,
       :current_bid_price => page.at("table.grad_box td[valign=top] span").text[1..-1].to_f,
-      :buy_it_now_price => page.form_with(:action => "index.cfm").maxbid.to_f,
-      :shipping_cost => page.at("table.grad_box tr td font strong span").text[1..-1].to_f,
       :end_time => DateTime.strptime(page.at("table.grad_box tr td[nowrap] font[color='#666666']").text.strip, "%m/%d/%y %I:%M:%S %p Central Standard Time"),
       :bids => 0,
       :quantity => 1,
@@ -58,6 +66,16 @@ class AuctionScraper
       :items_missing => "example",
       :condition => "stuff"
     }
+    # shipping is optional and not rendered if not present
+    shipping_cost = page.at("table.grad_box tr td font strong span")
+    if shipping_cost.present?
+      auction.shipping_cost = shipping_cost.text[1..-1].to_f
+    end
+
+    buy_it_now_form = page.form_with(:action => "index.cfm")
+    if buy_it_now_form.present?
+      auction.buy_it_now_price = buy_it_now_form.maxbid.to_f
+    end
 
     auction
   end
