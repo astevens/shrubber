@@ -9,9 +9,10 @@ class AuctionItem
   property :buy_it_now_price, Float
   property :shipping_cost, Float
   property :end_time, DateTime
-  property :bids, Integer
   property :quantity, Integer
   property :location, String
+  property :manufacturer, String
+  property :model_number, String
   property :items_included, String
   property :items_missing, String
   property :condition, String

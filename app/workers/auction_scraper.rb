@@ -55,13 +55,21 @@ class AuctionScraper
       logger.warn "Couldn't load auction #{auction_url}"
       return nil
     end
+
+    manufacturer = page.at("table table table table tr td").text.match(/Manufacturer: (.+)/)[1]
+    # some old fashined string handling since I don't seem to be able to regex part of a word
+    manufacturer = manufacturer[0..(manufacturer.index("Model") - 1)]
+    model_number = page.at("table table table table tr td").text.match(/Model Number: (.+)/)[1]
+    model_number = model_number[0..(model_number.index("Items") - 1)]
+
     auction.attributes = {
       :name => name_element.children[2].text.strip,
       :current_bid_price => page.at("table.grad_box td[valign=top] span").text[1..-1].to_f,
       :end_time => DateTime.strptime(page.at("table.grad_box tr td[nowrap] font[color='#666666']").text.strip, "%m/%d/%y %I:%M:%S %p Central Standard Time"),
-      :bids => 0,
-      :quantity => 1,
-      :location => "here",
+      :manufacturer => manufacturer,
+      :model_number => model_number,
+      :quantity => page.form_with(:action => "index.cfm").bidquantity.to_i,
+      :location => page.at("table table table table tr td+td").text.match(/Item Location: (.+)/)[1],
       :items_included => "example",
       :items_missing => "example",
       :condition => "stuff"
